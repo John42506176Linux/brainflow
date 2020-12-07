@@ -101,9 +101,12 @@ int ConcentrationKNNClassifier::release ()
         safe_logger (spdlog::level::err, "Please prepare classifier with prepare method.");
         return (int)BrainFlowExitCodes::CLASSIFIER_IS_NOT_PREPARED_ERROR;
     }
+    auto start = std::chrono::high_resolution_clock::now();
     delete kdtree;
     kdtree = NULL;
     dataset.clear ();
+    finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "Release time :{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     safe_logger (spdlog::level::info, "Model has been cleared.");
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
