@@ -105,7 +105,7 @@ int ConcentrationKNNClassifier::release ()
     delete kdtree;
     kdtree = NULL;
     dataset.clear ();
-    finish = std::chrono::high_resolution_clock::now();
+    auto finish = std::chrono::high_resolution_clock::now();
     safe_logger (spdlog::level::info, "Release time :{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     safe_logger (spdlog::level::info, "Model has been cleared.");
     return (int)BrainFlowExitCodes::STATUS_OK;
