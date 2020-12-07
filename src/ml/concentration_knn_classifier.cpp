@@ -6,7 +6,7 @@
 #include "concentration_knn_classifier.h"
 #include "focus_dataset.h"
 
-using milli = std::chrono::milliseconds;
+using milli = std::chrono::microseconds;
 
 int ConcentrationKNNClassifier::prepare ()
 {
@@ -46,7 +46,7 @@ int ConcentrationKNNClassifier::prepare ()
     }
     kdtree = new kdt::KDTree<FocusPoint> (dataset);
     auto finish = std::chrono::high_resolution_clock::now();
-    safe_logger (spdlog::level::info, "Preparation time:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    safe_logger (spdlog::level::info, "Preparation time:{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
@@ -90,7 +90,7 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
     double score = ((double)num_ones) / num_neighbors;
     *output = score;
     auto finish = std::chrono::high_resolution_clock::now();
-    safe_logger (spdlog::level::info, "KnnSearch :{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    safe_logger (spdlog::level::info, "KnnSearch :{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
