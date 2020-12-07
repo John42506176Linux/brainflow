@@ -8,7 +8,7 @@
 #include "concentration_knn_classifier.h"
 #include "focus_dataset.h"
 
-using milli = std::chrono::milliseconds;
+using milli = std::chrono::microseconds;
 
 int ConcentrationKNNClassifier::prepare ()
 {
@@ -67,7 +67,7 @@ int ConcentrationKNNClassifier::prepare ()
         kdtrees.push_back (kdtree);
     }
     auto finish = std::chrono::high_resolution_clock::now();
-    safe_logger (spdlog::level::info, "Preparation time:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    safe_logger (spdlog::level::info, "Preparation time:{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
@@ -111,7 +111,7 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
             i));
     }
     auto finish = std::chrono::high_resolution_clock::now();
-    safe_logger (spdlog::level::info, "Find nearest per thread:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    safe_logger (spdlog::level::info, "Find nearest per thread:{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     start = std::chrono::high_resolution_clock::now();
     // merge threads and find final neighbors
     std::vector<FocusPoint> merged_dataset;
@@ -125,7 +125,7 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
     }
     kdt::KDTree<FocusPoint> merged_kdtree (merged_dataset);
     finish = std::chrono::high_resolution_clock::now();
-    safe_logger (spdlog::level::info, "Merge threads:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    safe_logger (spdlog::level::info, "Merge threads:{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     // count ones
     start = std::chrono::high_resolution_clock::now();
     const std::vector<int> knn_ids = merged_kdtree.knnSearch (sample_to_predict, num_neighbors);
@@ -141,7 +141,7 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
     double score = ((double)num_ones) / num_neighbors;
     *output = score;
     finish = std::chrono::high_resolution_clock::now();
-    safe_logger (spdlog::level::info, "KnnSearch :{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    safe_logger (spdlog::level::info, "KnnSearch :{} microseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
