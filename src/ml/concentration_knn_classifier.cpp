@@ -1,11 +1,12 @@
 #include <algorithm>
 #include <cmath>
 #include <stdlib.h>
-
+#include <chrono>
 #include "brainflow_constants.h"
 #include "concentration_knn_classifier.h"
 #include "focus_dataset.h"
 
+using milli = std::chrono::milliseconds;
 
 int ConcentrationKNNClassifier::prepare ()
 {
@@ -31,7 +32,7 @@ int ConcentrationKNNClassifier::prepare ()
         safe_logger (spdlog::level::err, "You must pick from 1-100 neighbors.");
         return (int)BrainFlowExitCodes::INVALID_ARGUMENTS_ERROR;
     }
-
+    auto start = std::chrono::high_resolution_clock::now();
     int dataset_len = sizeof (brainflow_focus_y) / sizeof (brainflow_focus_y[0]);
     for (int i = 0; i < dataset_len; i++)
     {
@@ -44,6 +45,8 @@ int ConcentrationKNNClassifier::prepare ()
         dataset.push_back (point);
     }
     kdtree = new kdt::KDTree<FocusPoint> (dataset);
+    auto finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "Preparation time:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
@@ -72,7 +75,7 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
             feature_vector[i] = data[i];
         }
     }
-
+    auto start = std::chrono::high_resolution_clock::now();
     FocusPoint sample_to_predict (feature_vector, 10, 0.0);
     const std::vector<int> knn_ids = kdtree->knnSearch (sample_to_predict, num_neighbors);
     int num_ones = 0;
@@ -86,7 +89,8 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
 
     double score = ((double)num_ones) / num_neighbors;
     *output = score;
-
+    auto finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "KnnSearch :{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
