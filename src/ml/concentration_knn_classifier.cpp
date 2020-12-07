@@ -3,11 +3,12 @@
 #include <future>
 #include <stdlib.h>
 #include <thread>
-
+#include <chrono>
 #include "brainflow_constants.h"
 #include "concentration_knn_classifier.h"
 #include "focus_dataset.h"
 
+using milli = std::chrono::milliseconds;
 
 int ConcentrationKNNClassifier::prepare ()
 {
@@ -33,12 +34,11 @@ int ConcentrationKNNClassifier::prepare ()
         safe_logger (spdlog::level::err, "You must pick from 1 to 100 neighbors.");
         return (int)BrainFlowExitCodes::INVALID_ARGUMENTS_ERROR;
     }
-
     int num_cores = std::thread::hardware_concurrency ();
     safe_logger (spdlog::level::debug, "Use {} threads for KNN calculation.", num_cores);
     int dataset_len = sizeof (brainflow_focus_y) / sizeof (brainflow_focus_y[0]);
     int data_per_thread = dataset_len / num_cores;
-
+    auto start = std::chrono::high_resolution_clock::now();
     for (int thread_num = 0; thread_num < num_cores; thread_num++)
     {
         int start_index = thread_num * data_per_thread;
@@ -66,6 +66,8 @@ int ConcentrationKNNClassifier::prepare ()
         kdt::KDTree<FocusPoint> *kdtree = new kdt::KDTree<FocusPoint> (datasets.back ());
         kdtrees.push_back (kdtree);
     }
+    auto finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "Preparation time:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
@@ -96,6 +98,7 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
     }
 
     // find nearest per thread
+    auto start = std::chrono::high_resolution_clock::now();
     FocusPoint sample_to_predict (feature_vector, 10, 0.0);
     std::vector<std::future<std::vector<int>>> pool;
     for (int i = 0; i < kdtrees.size (); i++)
@@ -107,7 +110,9 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
             },
             i));
     }
-
+    auto finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "Find nearest per thread:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
+    start = std::chrono::high_resolution_clock::now();
     // merge threads and find final neighbors
     std::vector<FocusPoint> merged_dataset;
     for (int i = 0; i < pool.size (); i++)
@@ -119,8 +124,10 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
         }
     }
     kdt::KDTree<FocusPoint> merged_kdtree (merged_dataset);
-
+    finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "Merge threads:{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
     // count ones
+    start = std::chrono::high_resolution_clock::now();
     const std::vector<int> knn_ids = merged_kdtree.knnSearch (sample_to_predict, num_neighbors);
     int num_ones = 0;
     for (int i = 0; i < knn_ids.size (); i++)
@@ -133,7 +140,8 @@ int ConcentrationKNNClassifier::predict (double *data, int data_len, double *out
 
     double score = ((double)num_ones) / num_neighbors;
     *output = score;
-
+    finish = std::chrono::high_resolution_clock::now();
+    safe_logger (spdlog::level::info, "KnnSearch :{} milliseconds", std::chrono::duration_cast<milli>(finish - start).count());
     return (int)BrainFlowExitCodes::STATUS_OK;
 }
 
